@@ -1,4 +1,4 @@
-FROM       centos:centos7
+FROM registry.access.redhat.com/rhel7/rhel
 MAINTAINER Sonatype <cloud-ops@sonatype.com>
 
 ENV NEXUS_DATA /nexus-data
