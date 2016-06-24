@@ -34,8 +34,8 @@ RUN mkdir -p /opt/sonatype/nexus \
 # Patch nexus
 # https://support.sonatype.com/hc/en-us/articles/218729178-Nexus-Repository-Manager-3-0-0-03-Docker-Rollup-Patch
 RUN curl --fail --silent --retry 3 \
-    https://support.sonatype.com/hc/en-us/article_attachments/208186848/nexus-repository-docker-3.0.0-03-patch2.jar \
-    -o /opt/sonatype/nexus/system/com/sonatype/nexus/plugins/nexus-repository-docker/3.0.0-03/nexus-repository-docker-3.0.0-03.jar
+    https://support.sonatype.com/hc/en-us/article_attachments/208186848/nexus-repository-docker-${NEXUS_VERSION}-patch2.jar \
+    -o /opt/sonatype/nexus/system/com/sonatype/nexus/plugins/nexus-repository-docker/${NEXUS_VERSION}/nexus-repository-docker-${NEXUS_VERSION}.jar
 
 ## configure nexus runtime env
 RUN sed \
