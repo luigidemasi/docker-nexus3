@@ -24,7 +24,7 @@ ARG NEXUS_VERSION=3.5.2-01
 ARG NEXUS_DOWNLOAD_URL=https://download.sonatype.com/nexus/3/nexus-${NEXUS_VERSION}-unix.tar.gz
 
 RUN yum install -y \
-  curl tar \
+  curl tar rsync\
   && yum clean all
 
 # configure java runtime
