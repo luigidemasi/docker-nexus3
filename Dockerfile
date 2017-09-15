@@ -68,12 +68,15 @@ RUN sed \
     -e '/^-XX:MaxDirectMemorySize/d' \
     -i ${NEXUS_HOME}/bin/nexus.vmoptions
 
+
+ADD  uid_entrypoint /tmp/
+
 #RUN useradd -r -u 200 -m -c "nexus role account" -d ${NEXUS_DATA} -s /bin/false nexus \
  RUN  mkdir -p ${NEXUS_DATA}/etc ${NEXUS_DATA}/log ${NEXUS_DATA}/tmp ${SONATYPE_WORK} \
   && ln -s ${NEXUS_DATA} ${SONATYPE_WORK}/nexus3 \
-  && chgrp -R 0 ${NEXUS_DATA} && chmod -R g=u  ${NEXUS_DATA} && chmod g=u /etc/passwd
+  && chgrp -R 0 ${NEXUS_DATA} && chmod -R g=u  ${NEXUS_DATA} && chmod g=u /etc/passwd && chmod +x /tmp/uid_entrypoint
   
-ADD   uid_entrypoint /tmp/
+
 
 VOLUME ${NEXUS_DATA}
 
