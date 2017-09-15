@@ -71,14 +71,20 @@ RUN sed \
 #RUN useradd -r -u 200 -m -c "nexus role account" -d ${NEXUS_DATA} -s /bin/false nexus \
  RUN  mkdir -p ${NEXUS_DATA}/etc ${NEXUS_DATA}/log ${NEXUS_DATA}/tmp ${SONATYPE_WORK} \
   && ln -s ${NEXUS_DATA} ${SONATYPE_WORK}/nexus3 \
-  && chgrp -R 0 ${NEXUS_DATA} && chmod -R g=u  ${NEXUS_DATA}
+  && chgrp -R 0 ${NEXUS_DATA} && chmod -R g=u  ${NEXUS_DATA} && chmod g=u /etc/passwd
+  
+ADD   uid_entrypoint /tmp/
 
 VOLUME ${NEXUS_DATA}
 
 EXPOSE 8081
-USER 1001
+
 WORKDIR ${NEXUS_HOME}
 
 ENV INSTALL4J_ADD_VM_PARAMS="-Xms1200m -Xmx1200m -XX:MaxDirectMemorySize=2g -Djava.util.prefs.userRoot=${NEXUS_DATA}/javaprefs"
 
+ENTRYPOINT [ "/tmp/uid_entrypoint" ]
+
 CMD ["bin/nexus", "run"]
+
+USER 1001
