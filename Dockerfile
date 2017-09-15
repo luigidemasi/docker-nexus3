@@ -1,64 +1,84 @@
-FROM registry.access.redhat.com/rhel7/rhel
+# Copyright (c) 2016-present Sonatype, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM       centos:centos7
+
 MAINTAINER Sonatype <cloud-ops@sonatype.com>
 
-ENV NEXUS_DATA /nexus-data
+LABEL vendor=Sonatype \
+  com.sonatype.license="Apache License, Version 2.0" \
+  com.sonatype.name="Nexus Repository Manager base image"
 
-ENV NEXUS_VERSION 3.5.2-01
-
-ENV JAVA_HOME /opt/java
-ENV JAVA_VERSION_MAJOR 8
-ENV JAVA_VERSION_MINOR 77
-ENV JAVA_VERSION_BUILD 03
+ARG NEXUS_VERSION=3.5.2-01
+ARG NEXUS_DOWNLOAD_URL=https://download.sonatype.com/nexus/3/nexus-${NEXUS_VERSION}-unix.tar.gz
 
 RUN yum install -y \
-  curl tar net-tools \
+  curl tar \
   && yum clean all
+
+# configure java runtime
+ENV JAVA_HOME=/opt/java \
+  JAVA_VERSION_MAJOR=8 \
+  JAVA_VERSION_MINOR=144 \
+  JAVA_VERSION_BUILD=01 \
+  JAVA_DOWNLOAD_HASH=090f390dda5b47b9b721c7dfaa008135
+
+# configure nexus runtime
+ENV SONATYPE_DIR=/opt/sonatype
+ENV NEXUS_HOME=${SONATYPE_DIR}/nexus \
+  NEXUS_DATA=/nexus-data \
+  NEXUS_CONTEXT='' \
+  SONATYPE_WORK=${SONATYPE_DIR}/sonatype-work
 
 # install Oracle JRE
 RUN mkdir -p /opt \
   && curl --fail --silent --location --retry 3 \
   --header "Cookie: oraclelicense=accept-securebackup-cookie; " \
-  http://download.oracle.com/otn-pub/java/jdk/${JAVA_VERSION_MAJOR}u${JAVA_VERSION_MINOR}-b${JAVA_VERSION_BUILD}/server-jre-${JAVA_VERSION_MAJOR}u${JAVA_VERSION_MINOR}-linux-x64.tar.gz \
+  http://download.oracle.com/otn-pub/java/jdk/${JAVA_VERSION_MAJOR}u${JAVA_VERSION_MINOR}-b${JAVA_VERSION_BUILD}/${JAVA_DOWNLOAD_HASH}/server-jre-${JAVA_VERSION_MAJOR}u${JAVA_VERSION_MINOR}-linux-x64.tar.gz \
   | gunzip \
   | tar -x -C /opt \
   && ln -s /opt/jdk1.${JAVA_VERSION_MAJOR}.0_${JAVA_VERSION_MINOR} ${JAVA_HOME}
 
 # install nexus
-RUN mkdir -p /opt/sonatype/nexus \
+RUN mkdir -p ${NEXUS_HOME} \
   && curl --fail --silent --location --retry 3 \
-    https://download.sonatype.com/nexus/3/nexus-${NEXUS_VERSION}-unix.tar.gz \
+    ${NEXUS_DOWNLOAD_URL} \
   | gunzip \
-  | tar x -C /opt/sonatype/nexus --strip-components=1 nexus-${NEXUS_VERSION} \
-  && chown -R root:root /opt/sonatype/nexus
-  
-# Patch nexus
-# https://support.sonatype.com/hc/en-us/articles/218729178-Nexus-Repository-Manager-3-0-0-03-Docker-Rollup-Patch
-#RUN curl --fail --silent --retry 3 \
-#    https://support.sonatype.com/hc/en-us/article_attachments/208186848/nexus-repository-docker-${NEXUS_VERSION}-patch2.jar \
-#    -o /opt/sonatype/nexus/system/com/sonatype/nexus/plugins/nexus-repository-docker/${NEXUS_VERSION}/nexus-repository-docker-${NEXUS_VERSION}.jar
+  | tar x -C ${NEXUS_HOME} --strip-components=1 nexus-${NEXUS_VERSION} \
+  && chown -R root:root ${NEXUS_HOME}
 
-RUN chmod -R a+w /opt/sonatype/nexus/etc
-
-## configure nexus runtime env
+# configure nexus
 RUN sed \
-    -e "s|karaf.home=.|karaf.home=/opt/sonatype/nexus|g" \
-    -e "s|karaf.base=.|karaf.base=/opt/sonatype/nexus|g" \
-    -e "s|karaf.etc=etc|karaf.etc=/opt/sonatype/nexus/etc|g" \
-    -e "s|java.util.logging.config.file=etc|java.util.logging.config.file=/opt/sonatype/nexus/etc|g" \
-    -e "s|karaf.data=data|karaf.data=${NEXUS_DATA}|g" \
-    -e "s|java.io.tmpdir=data/tmp|java.io.tmpdir=${NEXUS_DATA}/tmp|g" \
-    -i /opt/sonatype/nexus/bin/nexus.vmoptions
+    -e '/^nexus-context/ s:$:${NEXUS_CONTEXT}:' \
+    -i ${NEXUS_HOME}/etc/nexus-default.properties \
+  && sed \
+    -e '/^-Xms/d' \
+    -e '/^-Xmx/d' \
+    -e '/^-XX:MaxDirectMemorySize/d' \
+    -i ${NEXUS_HOME}/bin/nexus.vmoptions
 
-RUN useradd -r -u 200 -m -c "nexus role account" -d ${NEXUS_DATA} -s /bin/false nexus
+RUN useradd -r -u 200 -m -c "nexus role account" -d ${NEXUS_DATA} -s /bin/false nexus \
+  && mkdir -p ${NEXUS_DATA}/etc ${NEXUS_DATA}/log ${NEXUS_DATA}/tmp ${SONATYPE_WORK} \
+  && ln -s ${NEXUS_DATA} ${SONATYPE_WORK}/nexus3 \
+  && chown -R nexus:nexus ${NEXUS_DATA}
 
 VOLUME ${NEXUS_DATA}
 
 EXPOSE 8081
 USER nexus
-WORKDIR /opt/sonatype/nexus
+WORKDIR ${NEXUS_HOME}
 
-ENV JAVA_MAX_MEM 1200m
-ENV JAVA_MIN_MEM 1200m
-ENV EXTRA_JAVA_OPTS ""
+ENV INSTALL4J_ADD_VM_PARAMS="-Xms1200m -Xmx1200m -XX:MaxDirectMemorySize=2g -Djava.util.prefs.userRoot=${NEXUS_DATA}/javaprefs"
 
-CMD bin/nexus run
+CMD ["bin/nexus", "run"]
