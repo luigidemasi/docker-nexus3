@@ -68,15 +68,15 @@ RUN sed \
     -e '/^-XX:MaxDirectMemorySize/d' \
     -i ${NEXUS_HOME}/bin/nexus.vmoptions
 
-RUN useradd -r -u 200 -m -c "nexus role account" -d ${NEXUS_DATA} -s /bin/false nexus \
-  && mkdir -p ${NEXUS_DATA}/etc ${NEXUS_DATA}/log ${NEXUS_DATA}/tmp ${SONATYPE_WORK} \
+#RUN useradd -r -u 200 -m -c "nexus role account" -d ${NEXUS_DATA} -s /bin/false nexus \
+ RUN  mkdir -p ${NEXUS_DATA}/etc ${NEXUS_DATA}/log ${NEXUS_DATA}/tmp ${SONATYPE_WORK} \
   && ln -s ${NEXUS_DATA} ${SONATYPE_WORK}/nexus3 \
-  && chown -R nexus:root ${NEXUS_DATA} && chmod -R g+w  ${NEXUS_DATA}
+  && chgrp -R 0 ${NEXUS_DATA} && chmod -R g=u  ${NEXUS_DATA}
 
 VOLUME ${NEXUS_DATA}
 
 EXPOSE 8081
-USER nexus
+USER 1001
 WORKDIR ${NEXUS_HOME}
 
 ENV INSTALL4J_ADD_VM_PARAMS="-Xms1200m -Xmx1200m -XX:MaxDirectMemorySize=2g -Djava.util.prefs.userRoot=${NEXUS_DATA}/javaprefs"
