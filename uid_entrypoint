@@ -1,0 +1,7 @@
+#!/bin/sh
+if ! whoami &> /dev/null; then
+  if [ -w /etc/passwd ]; then
+    echo "nexus:x:$(id -u):0:Nexus role account:${NEXUS_DATA}:/bin/false" >> /etc/passwd
+  fi
+fi
+exec "$@"
