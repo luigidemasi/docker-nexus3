@@ -71,7 +71,7 @@ RUN sed \
 RUN useradd -r -u 200 -m -c "nexus role account" -d ${NEXUS_DATA} -s /bin/false nexus \
   && mkdir -p ${NEXUS_DATA}/etc ${NEXUS_DATA}/log ${NEXUS_DATA}/tmp ${SONATYPE_WORK} \
   && ln -s ${NEXUS_DATA} ${SONATYPE_WORK}/nexus3 \
-  && chown -R nexus:nexus ${NEXUS_DATA}
+  && chown -R nexus:root ${NEXUS_DATA} && chmod -R g+w  ${NEXUS_DATA}
 
 VOLUME ${NEXUS_DATA}
 
