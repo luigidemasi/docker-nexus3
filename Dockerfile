@@ -24,15 +24,10 @@ ARG NEXUS_VERSION=3.5.2-01
 ARG NEXUS_DOWNLOAD_URL=https://download.sonatype.com/nexus/3/nexus-${NEXUS_VERSION}-unix.tar.gz
 
 RUN yum install -y \
-  curl tar rsync\
+  curl java-1.8.0-openjdk-headless tar rsync\
   && yum clean all
 
-# configure java runtime
-ENV JAVA_HOME=/opt/java
-ENV JAVA_VERSION_MAJOR=8 
-ENV JAVA_VERSION_MINOR=144 
-ENV JAVA_VERSION_BUILD=01 
-ENV JAVA_DOWNLOAD_HASH=090f390dda5b47b9b721c7dfaa008135
+ENV JAVA_HOME=/usr/lib/jvm/jre
 
 # configure nexus runtime
 ENV SONATYPE_DIR=/opt/sonatype
